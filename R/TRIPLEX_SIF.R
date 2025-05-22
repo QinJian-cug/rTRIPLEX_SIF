@@ -640,7 +640,7 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
   print(p_season)
   ggsave("./result/plot_Seasonal.jpg", plot = p_season, width = 12, height = 10)
 
-  #  Diurnal dynamics plot----
+  # Diurnal dynamics plot----
 
   # 去除 time 为 5.5, 6, 6.5, 19, 19.5 的数据
   filtered_data <- result %>%
@@ -729,7 +729,6 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     annotate("text", x = max(daily_stats$time, na.rm = TRUE), y = max(daily_stats$GPP_max, na.rm = TRUE) * 1.1,
              label = "(b)", color = "blue", size = 5, hjust = 1)
 
-
   # 绘制 GPP30min 和 GPP 的叠加图
   plot_gpp_combined <- ggplot(daily_stats, aes(x = time)) +
     geom_line(aes(y = GPP_avg, color = "Observed GPP"), size = 1) +
@@ -762,7 +761,6 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     ) +
     annotate("text", x = max(daily_stats$time, na.rm = TRUE), y = max(daily_stats$GPP30min_max, na.rm = TRUE) * 1.1,
              label = "(a)", color = "black", size = 8, hjust = 1)
-
 
   # 计算 GPP30min 和 SIFfull 的最大值，并计算转换因子 coef
   max_gpp30min <- max(daily_stats$GPP30min_max, na.rm = TRUE)
@@ -807,14 +805,11 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     annotate("text", x = max(daily_stats$time, na.rm = TRUE), y = max_gpp30min * 1.1,
              label = "(b)", color = "black", size = 8, hjust = 1)
 
-
-
   # 保存叠加图表
   ggsave("./result/plot_diurnal_GPP_Combined.jpg", plot = plot_gpp_combined, width = 8, height = 6)
   ggsave("./result/plot_diurnal_GPP_SIFfull_Combined.jpg", plot = plot_gpp_siffull_combined, width = 8, height = 6)
   print(plot_gpp_combined)
   print(plot_gpp_siffull_combined)
-
 
   # Environmental factors plot----
   # 加载必要的包
@@ -842,7 +837,7 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     scale_shape_manual(values = c("Ta" = 16)) +
     scale_linetype_manual(values = c("Ta" = "solid")) +
     scale_y_continuous(name = "Ta (℃)", limits = c(0, max(monthly_summary$Ta) * 1.1)) +
-    scale_x_discrete(labels = function(x) gsub("月", "", x)) +  # 去掉月份中的“月”
+    # scale_x_discrete(labels = function(x) gsub("月", "", x)) +  # 去掉月份中的“月”
     labs(x = "Month", shape = "Legend", linetype = "Legend") +
     theme_minimal() +
     theme(panel.border = element_rect(color = "black", fill = NA),  # 添加边框
@@ -871,7 +866,7 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
       limits = c(0, max_rh * 1.1),
       sec.axis = sec_axis(~ . / coef_rh_vpd, name = "VPD (hPa)")  # 反向转换 VPD 的值
     ) +
-    scale_x_discrete(labels = function(x) gsub("月", "", x)) +  # 去掉月份中的“月”
+    # scale_x_discrete(labels = function(x) gsub("月", "", x)) +  # 去掉月份中的“月”
     labs(x = "Month", shape = "Legend", linetype = "Legend") +
     theme_minimal() +
     theme(panel.border = element_rect(color = "black", fill = NA),  # 添加边框
