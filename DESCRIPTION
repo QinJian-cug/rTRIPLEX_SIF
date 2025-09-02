@@ -1,8 +1,14 @@
 Package: rTRIPLEXSIF
-Title: Carbon-Water Coupled Model
+Title: Photosynthesis Model
 Version: 0.4.0
-Authors@R: 
-    person("QinJian", "Qin", email = "qjian1998@cug.edu.cn", role = c("aut", "cre"))
+Authors@R:c( 
+    person("Jian", "Qin", email = "qjian1998@cug.edu.cn", role = c("aut", "cre"),
+    person("Chunbo", "Huang", email = "huangchunbo@cug.edu.cn", role = c("aut"),
+    person("Shulan", "Sun", email = "sslhhxx@163.com", role = c("aut", "cre")
+    person("Shaoqiang", "Wang", email = "sqwang@igsnrr.ac.cn", role = c("aut"),
+    person("Changhui", "Peng", email = "peng.changhui@uqam.ca", role = c("aut")
+    )
+Author: Jian Qin [aut, cre], Chunbo Huang [aut], Shulan Sun [aut], Shaoqiang Wang [aut], Changhui Peng [aut]
 Description: What the package does (one paragraph).
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license

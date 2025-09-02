@@ -1,5 +1,7 @@
+
 library(pracma)
 RC_PSII <- read.csv('./data/RC_PSII.csv') # Read the standard database of chlorophyll fluorescence by relative path
+
 PPFD_Chlf <- function(wavelength, radiance)
 {
   # Define the constant of convert-function
@@ -13,10 +15,10 @@ PPFD_Chlf <- function(wavelength, radiance)
 
   rad_umol_temp <- rep(0, length = length(radiance))
   for (i in 1: (length(radiance) - 1))
-    {
+  {
     delta_wl <- wavelength[i + 1] - wavelength[i]
     rad_umol_temp[i] <- (rad_umol[i] + rad_umol[i + 1]) / 2 * delta_wl
-    }
+  }
 
   PAR_wl <- which(wavelength > 640 & wavelength < 850)
   # 在选定的波长范围内对光子通量密度求和 (忽略 NA 值)
@@ -25,22 +27,8 @@ PPFD_Chlf <- function(wavelength, radiance)
   return(PAR_ppfd)
 }
 
-#' rTRIPLEX_SIF
-#'
-#' @param Input_variable A table as described in \code{\link{Inputpara}} containing the information about input variables.
-#' @param Input_parameter A table as described in \code{\link{Inputvariable}} containing the information about input parameters.
-#' @returns A list with class "result". More details on the output is \code{\link{result}}
-#' @export
-#'
-#' @examples
-#' library(rTRIPLEXSIF)
-#' data("onemonth_exam")
-#' data("Inputpara")
-#' out<- TRIPLEX_SIF (Input_variable = onemonth_exam,
-#'                    Input_parameter = Inputpara)
-
-TRIPLEX_SIF<- function(Input_variable,Input_parameter)
-{
+TRIPLEX_SIF<- function(Input_variable,Input_parameter,
+                            overyear=FALSE) {
 
   ## To maintain user's original options
   #oldpar <- par(no.readonly = TRUE)
@@ -48,12 +36,12 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
 
   # Measured net ecosystem production and evapotranspiration
   Input_variable$GPP<-Input_variable$GPPob*1800/1000/44*12
-  Input_variable$OETS<-0.43*Input_variable$LE/(597-0.564*Input_variable$Ta)
+  # Input_variable$OETS<-0.43*Input_variable$LE/(597-0.564*Input_variable$Ta)
 
   # Input variable assignment
   Cappm<-Input_variable$Cof # CO2 concentration in the atmosphere, ppm
   Tem<-Input_variable$Ta # Air temperature, degrees Celsius
-  Day<-Input_variable$DOY # Day of year, day
+  Day<-Input_variable$DOY # Day of Year, day
   time<-Input_variable$time # Local time, h
   RH<-Input_variable$RH # Relative humidity, %
   PPFD<-Input_variable$PPFD # Photosynthetic photon flux density, μmol m-2 s-1
@@ -61,6 +49,7 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
   Rn<-Input_variable$Rn # Net radiation at the canopy surface, W m-2
   G<-Input_variable$G # Soil heat flux, W m-2
   VPD1<-Input_variable$VPDhpa/10 # Vapor pressure deficit, kPa
+
 
   # The new variable appended of SIF
   NIRv<- Input_variable$NIRv # Normalized difference vegetation index
@@ -90,7 +79,7 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
   d<-rep(0,x);svt<-rep(0,x);ra<-rep(0,x);LES<-rep(0,x);gsms<-rep(0,x);ETS<-rep(0,x);
   fesc <- rep(0,x); SIFps2 <- rep(0,x); SIFps <- rep(0,x); SIFfc <- rep(0,x);
   qL <- rep(0,x); PSmax <- rep(0, x);
-  SIFfc_vector <- matrix(0, nrow = 211, ncol = x)
+  SIFfc_vector <- matrix(0, nrow = 211, ncol = x);
   SIFfull <<- rep(0, x); J <<- rep(0, x);
 
   # Calculation process of TRIPLEX-CW-Flux model
@@ -119,7 +108,7 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     Vm[i]<-Vm25*2.4^((Tem[i]-25)/10)*fT[i]*fN # Maximum carboxylation rate, μmol m-2 s-1
     Vc[i]<-Vm[i]*(Ci[i]-COp[i])/(Ci[i]+K[i]) # Rubisco-limited gross photosynthesis rates, μmol m-2 s-1
 
-    # SIFob convert to SIFfull according to Liu(2022)
+    # SIFob convert to SIFfull according to Liu(2022)----
     fPSII <- Input_parameter$fPSII # The contribution of PSII fluorescence to SIF
     # fPAR[i] <- 0.79 * (0.516 * WDRVI[i] + 0.726) # The radio of absorbed photosynthesis active radiation of canopy
     fesc[i] <- NIRv[i] / fPAR[i] # The escaped probability of SIF photon from leaf level to canopy level
@@ -133,11 +122,11 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
 
     # Light-limited gross photosynthesis rates for big leaf
     Kdf <- Input_parameter$Kdf # The radio of kd and kf, kd is how fast the heat loss happens, and kf is the rate of fluorscence emission
-    qL[i] <- exp(-0.001 * PPFD[i]) * 1 #The redox status of PSII reaction centers
+    qL[i] <- exp(-0.0008 * PPFD[i]) * 1 #The redox status of PSII reaction centers
     PSmax[i] <- Tem[i]^2 * (-0.0011) + Tem[i] * 0.036 + 0.44 #The maximum photochemical efficiency of PSII
     J[i] <- SIFfull[i] * qL[i] * ((1 + Kdf) * PSmax[i]) / (1 - PSmax[i])
 
-    #Jmax[i]<-29.1+1.64*Vm[i] # Light-saturated rate of electron transport in the photosynthetic carbon reduction cycle in leaf cells, μmol m-2 s-1
+    Jmax[i]<-29.1+1.64*Vm[i] # Light-saturated rate of electron transport in the photosynthetic carbon reduction cycle in leaf cells, μmol m-2 s-1
     #J[i]<-Jmax[i]*PPFD[i]/(PPFD[i]+2.1*Jmax[i]) # Electron transport rate, μmol m-2 s-1
 
     Vj1[i]<-J[i]*(Ci[i]-COp[i])/(4.5*Ci[i]+10.5*COp[i])
@@ -189,17 +178,17 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     Icsh[i]<-Ic[i]-Icsun[i] # Irradiance absorbed by the shaded fractions of canopy
 
     # Irradiance dependence of electron transport of sunlit and shaded fractions of canopies
-    # bsh[i]<--(0.425*Icsh[i]+Jmax[i]) # Sum of PAR effectively absorbed by PSII and Jmax
-    # csh[i]<-Jmax[i]*0.425*Icsh[i]
-    #
-    # a<-0.7 # Curvature of leaf response of electron transport to irradiance
-    # Jsh1[i]<-(-bsh[i]+sqrt(bsh[i]^2-4*a*csh[i]))/(2*a) # Positive solution
-    # Jsh2[i]<-(-bsh[i]-sqrt(bsh[i]^2-4*a*csh[i]))/(2*a) # Negative solution
-    #
-    # bsunsh[i]<--(0.425*Ic[i]+Jmax[i])
-    # csunsh[i]<-0.425*Jmax[i]*Ic[i]
-    # Jsunsh1[i]<-(-bsunsh[i]+sqrt(bsunsh[i]^2-4*a*csunsh[i]))/(2*a) # Positive solution
-    # Jsunsh2[i]<-(-bsunsh[i]-sqrt(bsunsh[i]^2-4*a*csunsh[i]))/(2*a) # Negative solution
+    bsh[i]<--(0.425*Icsh[i]+Jmax[i]) # Sum of PAR effectively absorbed by PSII and Jmax
+    csh[i]<-Jmax[i]*0.425*Icsh[i]
+
+    a<-0.7 # Curvature of leaf response of electron transport to irradiance
+    Jsh1[i]<-(-bsh[i]+sqrt(bsh[i]^2-4*a*csh[i]))/(2*a) # Positive solution
+    Jsh2[i]<-(-bsh[i]-sqrt(bsh[i]^2-4*a*csh[i]))/(2*a) # Negative solution
+
+    bsunsh[i]<--(0.425*Ic[i]+Jmax[i])
+    csunsh[i]<-0.425*Jmax[i]*Ic[i]
+    Jsunsh1[i]<-(-bsunsh[i]+sqrt(bsunsh[i]^2-4*a*csunsh[i]))/(2*a) # Positive solution
+    Jsunsh2[i]<-(-bsunsh[i]-sqrt(bsunsh[i]^2-4*a*csunsh[i]))/(2*a) # Negative solution
 
     Ratio1[i]<-ifelse(Lsun[i]==0,0,Icsh[i]/Ic[i])
 
@@ -233,8 +222,8 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     VPD_close<-Input_parameter$VPD_close # The VPD at stomatal closure
     VPD_open<-Input_parameter$VPD_open # The VPD at stomatal opening
 
-    gs[i] <- g0 + 100 * m * RH[i] * Acanopy[i] / Ca[i] # Stomatal conductance at leaf level, m mol m-2 s-1
-    # gs[i]<-(g0+m*RH[i]*Acanopy[i]/Ca[i]*(max(0,min((SWC[i]-W_swc)/(S_swc-W_swc),1)))*(max(0,min((VPD_close-VPD1[i])/(VPD_close-VPD_open),1)))) # Stomatal conductance at leaf level, m mol m-2 s-1
+    #gs[i] <- 57.4 + 100 * 7.43 * RH[i] * Acanopy[i] / Ca[i] # Stomatal conductance at leaf level, m mol m-2 s-1
+    gs[i]<-(g0+m*RH[i]*Acanopy[i]/Ca[i]*(max(0,min((SWC[i]-W_swc)/(S_swc-W_swc),1)))*(max(0,min((VPD_close-VPD1[i])/(VPD_close-VPD_open),1)))) # Stomatal conductance at leaf level, m mol m-2 s-1
 
     # Net CO2 assimilation rate for canopy by Leuning (1990)
     AV[i] <- (gs[i]*22.4/(8.314*(Tem[i]+273))*(Ca[i]-Ci[i])/1.6)*LAI/2
@@ -296,7 +285,7 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
 
     # Evapotranspiration by Penman–Monteith model
     Cp<-1.013*1000 # Specific heat of the air, J kg-1 degrees Celsius-1
-    Ve<-Input_variable$Vms # The wind speed at height Hw, m s-1
+    # Ve<-Input_variable$Vms # The wind speed at height Hw, m s-1
     Pdensity<-rep(1.29,x) # Air density, kg m-3
     r<-0.66/10 # Psychrometric constant, kPa degrees Celsius-1
     Hw<-rep(Input_parameter$Hw,x) # The height at wind measurement, m
@@ -308,14 +297,14 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     Z0V[i]<-0.5*Z0M[i] # Roughness height for vapor and heat transfer, m
     d[i]<-0.7*Hcanopy[i] # Zero plane displacement height, m
     svt[i]<-4098*(0.6108*exp(17.27*Tem[i]/(Tem[i]+237.3)))/(Tem[i]+237.3)^2 # The slope of the saturation vapor pressure against temperature curve, kPa degrees Celsius-1
-    ra[i]<-log((Hw[i]-d[i])/Z0M[i])*log((Hw[i]-d[i])/Z0V[i])/(k[i]^2*Ve[i]) # Aerodynamic resistance, s m-1
-    LES[i]<-(svt[i]*(Rn[i]-G[i])+Pdensity[i]*Cp*VPD1[i]/ra[i])/(svt[i]+r*(1+1/gsms[i]/ra[i])) # Latent heat, w m-2
-    ETS[i]<-0.43*LES[i]/(597-0.564*Tem[i]) # Evapotranspiration, mm 30 min-1
+    # ra[i]<-log((Hw[i]-d[i])/Z0M[i])*log((Hw[i]-d[i])/Z0V[i])/(k[i]^2*Ve[i]) # Aerodynamic resistance, s m-1
+    # LES[i]<-(svt[i]*(Rn[i]-G[i])+Pdensity[i]*Cp*VPD1[i]/ra[i])/(svt[i]+r*(1+1/gsms[i]/ra[i])) # Latent heat, w m-2
+    # ETS[i]<-0.43*LES[i]/(597-0.564*Tem[i]) # Evapotranspiration, mm 30 min-1
 
-    # print(paste(Acanopy[i],AV[i],sep = "--"))
+    #print(paste(Acanopy[i],AV[i],sep = "--"))
 
 
-    #Iteration condition of TRIPLEX_CW_Flux: (abs(Acanopy[i]-AV[i])>1)|(Acanopy[i]>3)
+    #Iteration condition of TRIPLEX_CW_Flux: (abs(Acanopy[i]-AV[i])>1)|(Acanopy[i]>3)----
     while((abs(Acanopy[i]-AV[i])>1)|(Acanopy[i]>3)){
 
       # Iteration
@@ -339,10 +328,9 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
       Vm[i]<-Vm25*2.4^((Tem[i]-25)/10)*fT[i]*fN # Maximum carboxylation rate, μmol m-2 s-1
       Vc[i]<-Vm[i]*(Ci[i]-COp[i])/(Ci[i]+K[i]) # Rubisco-limited gross photosynthesis rates, μmol m-2 s-1
 
-      J[i] <- SIFfull[i] * ((1 + Kdf) * qL[i] * PSmax[i]) / (1 - PSmax[i])
+      J[i] <- SIFfull[i] * qL[i] * (1 + Kdf) * PSmax[i] / (1 - PSmax[i])
 
-      #Jmax[i]<-29.1+1.64*Vm[i] # Light-saturated rate of electron transport in the photosynthetic carbon reduction cycle in leaf cells, μmol m-2 s-1
-      #J[i]<-Jmax[i]*PPFD[i]/(PPFD[i]+2.1*Jmax[i]) # Electron transport rate, μmol m-2 s-1
+      Jmax[i]<-29.1+1.64*Vm[i] # Light-saturated rate of electron transport in the photosynthetic carbon reduction cycle in leaf cells, μmol m-2 s-1
       #J[i]<-Jmax[i]*PPFD[i]/(PPFD[i]+2.1*Jmax[i]) # Electron transport rate, μmol m-2 s-1
 
       Vj1[i]<-J[i]*(Ci[i]-COp[i])/(4.5*Ci[i]+10.5*COp[i])
@@ -394,17 +382,17 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
       Icsh[i]<-Ic[i]-Icsun[i] # Irradiance absorbed by the shaded fractions of canopy
 
       # Irradiance dependence of electron transport of sunlit and shaded fractions of canopies
-      # bsh[i]<--(0.425*Icsh[i]+Jmax[i]) # Sum of PAR effectively absorbed by PSII and Jmax
-      # csh[i]<-Jmax[i]*0.425*Icsh[i]
-      #
-      # a<-0.7 # Curvature of leaf response of electron transport to irradiance
-      # Jsh1[i]<-(-bsh[i]+sqrt(bsh[i]^2-4*a*csh[i]))/(2*a) # Positive solution
-      # Jsh2[i]<-(-bsh[i]-sqrt(bsh[i]^2-4*a*csh[i]))/(2*a) # Negative solution
-      #
-      # bsunsh[i]<--(0.425*Ic[i]+Jmax[i])
-      # csunsh[i]<-0.425*Jmax[i]*Ic[i]
-      # Jsunsh1[i]<-(-bsunsh[i]+sqrt(bsunsh[i]^2-4*a*csunsh[i]))/(2*a) # Positive solution
-      # Jsunsh2[i]<-(-bsunsh[i]-sqrt(bsunsh[i]^2-4*a*csunsh[i]))/(2*a) # Negative solution
+      bsh[i]<--(0.425*Icsh[i]+Jmax[i]) # Sum of PAR effectively absorbed by PSII and Jmax
+      csh[i]<-Jmax[i]*0.425*Icsh[i]
+
+      a<-0.7 # Curvature of leaf response of electron transport to irradiance
+      Jsh1[i]<-(-bsh[i]+sqrt(bsh[i]^2-4*a*csh[i]))/(2*a) # Positive solution
+      Jsh2[i]<-(-bsh[i]-sqrt(bsh[i]^2-4*a*csh[i]))/(2*a) # Negative solution
+
+      bsunsh[i]<--(0.425*Ic[i]+Jmax[i])
+      csunsh[i]<-0.425*Jmax[i]*Ic[i]
+      Jsunsh1[i]<-(-bsunsh[i]+sqrt(bsunsh[i]^2-4*a*csunsh[i]))/(2*a) # Positive solution
+      Jsunsh2[i]<-(-bsunsh[i]-sqrt(bsunsh[i]^2-4*a*csunsh[i]))/(2*a) # Negative solution
 
       Ratio1[i]<-ifelse(Lsun[i]==0,0,Icsh[i]/Ic[i])
 
@@ -437,6 +425,8 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
       W_swc<-Input_parameter$SWCw # Wilting soil volumetric moisture content at depth of 30 cm, %
       VPD_close<-Input_parameter$VPD_close # The VPD at stomatal closure
       VPD_open<-Input_parameter$VPD_open # The VPD at stomatal opening
+
+      #gs[i] <- 57.4 + 100 * 7.43 * RH[i] * Acanopy[i] / Ca[i] # Stomatal conductance at leaf level, m mol m-2 s-1
       gs[i]<-(g0+m*RH[i]*Acanopy[i]/Ca[i]*(max(0,min((SWC[i]-W_swc)/(S_swc-W_swc),1)))*(max(0,min((VPD_close-VPD1[i])/(VPD_close-VPD_open),1)))) # Stomatal conductance at leaf level, m mol m-2 s-1
 
       # Net CO2 assimilation rate for canopy by Leuning (1990)
@@ -509,21 +499,21 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
       Z0V[i]<-0.5*Z0M[i] # Roughness height for vapor and heat transfer, m
       d[i]<-0.7*Hcanopy[i] # Zero plane displacement height, m
       svt[i]<-4098*(0.6108*exp(17.27*Tem[i]/(Tem[i]+237.3)))/(Tem[i]+237.3)^2 # The slope of the saturation vapor pressure against temperature curve, kPa degrees Celsius-1
-      ra[i]<-log((Hw[i]-d[i])/Z0M[i])*log((Hw[i]-d[i])/Z0V[i])/(k[i]^2*Ve[i]) # Aerodynamic resistance, s m-1
-      LES[i]<-(svt[i]*(Rn[i]-G[i])+Pdensity[i]*Cp*VPD1[i]/ra[i])/(svt[i]+r*(1+1/gsms[i]/ra[i])) # Latent heat, w m-2
-      ETS[i]<-0.43*LES[i]/(597-0.564*Tem[i]) # Evapotranspiration, mm 30 min-1
+      # ra[i]<-log((Hw[i]-d[i])/Z0M[i])*log((Hw[i]-d[i])/Z0V[i])/(k[i]^2*Ve[i]) # Aerodynamic resistance, s m-1
+      # LES[i]<-(svt[i]*(Rn[i]-G[i])+Pdensity[i]*Cp*VPD1[i]/ra[i])/(svt[i]+r*(1+1/gsms[i]/ra[i])) # Latent heat, w m-2
+      # ETS[i]<-0.43*LES[i]/(597-0.564*Tem[i]) # Evapotranspiration, mm 30 min-1
 
       # Output condition of TRIPLEX_CW_Flux model: ((abs(Acanopy[i]-AV[i])<1)|(Acanopy[i]<3))
       if ((abs(Acanopy[i]-AV[i])<1)|(Acanopy[i]<3)){
         break
       }
-      # print(j)
 
     }
     # print(J[i])
     print(i)
+    #print(paste(Acanopy[i],AV[i],sep = "--"))
   }
-  result<-data.frame(Input_variable, NEP30min, ETS, GPP30min, Re30min, SIFfull, PSmax, qL, J, Ci, COp)
+  result<-data.frame(Input_variable, GPP30min, SIFfull, PSmax, qL, J)
   #View(result)----
 
   # Overall simulated plot----
@@ -644,7 +634,8 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
 
   # 去除 time 为 5.5, 6, 6.5, 19, 19.5 的数据
   filtered_data <- result %>%
-    filter(!time %in% c(5.5, 19.5))
+    filter(!time %in% c(6, 18))
+  Year <- result$year
 
   # 按 time 分类汇总，计算 GPP30min、GPP 和 SIFfull 的平均值及误差条范围
   daily_stats <- filtered_data %>%
@@ -676,12 +667,12 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     geom_errorbar(aes(ymin = GPP30min_min, ymax = GPP30min_max, color = "Simulated GPP"), width = 0.2) +  # 误差条
     scale_x_continuous(
       breaks = seq(6, max(daily_stats$time, na.rm = TRUE), by = 2),  # x刻度从6开始，间隔2
-      name = "Hour of day, 2023"
+      name = paste("Hour of day,", Year)
     ) +
     scale_color_manual(values = c("Simulated GPP" = "red")) +
     scale_shape_manual(values = c("Simulated GPP" = 16)) +
     labs(
-      x = "Hour of day, 2023",
+      x = paste("Hour of day,", Year),
       y = expression(Siumlated~GPP~(g~C~m^-2~day^-1)),
       color = "Legend",
       shape = "Legend"
@@ -706,12 +697,12 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     geom_errorbar(aes(ymin = GPP_min, ymax = GPP_max, color = "Observed GPP"), width = 0.2) +  # 误差条
     scale_x_continuous(
       breaks = seq(6, max(daily_stats$time, na.rm = TRUE), by = 2),  # x刻度从6开始，间隔2
-      name = "Hour of day, 2023"
+      name = paste("Hour of day,", Year)
     ) +
     scale_color_manual(values = c("Observed GPP" = "blue")) +
     scale_shape_manual(values = c("Observed GPP" = 16)) +
     labs(
-      x = "Hour of day, 2023",
+      x = paste("Hour of day,", Year),
       y = expression(Observed~GPP~(g~C~m^-2~30~min^-1)),
       color = "Legend",
       shape = "Legend"
@@ -739,12 +730,12 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     geom_errorbar(aes(ymin = GPP30min_min, ymax = GPP30min_max, color = "Simulated GPP"), width = 0.2) +
     scale_x_continuous(
       breaks = seq(6, max(daily_stats$time, na.rm = TRUE), by = 2),
-      name = "Hour of day, 2023"
+      name = paste("Hour of day,", Year)
     ) +
     scale_color_manual(values = c( "Observed GPP" = "blue","Simulated GPP" = "red")) +
     scale_shape_manual(values = c( "Observed GPP" = 16,"Simulated GPP" = 16)) +
     labs(
-      x = "Hour of day, 2023",
+      x = paste("Hour of day,", Year),
       y = expression(GPP~(g~C~m^-2~30~min^-1)),
       color = "Legend",
       shape = "Legend"
@@ -777,7 +768,7 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     geom_errorbar(aes(ymin = GPP30min_min, ymax = GPP30min_max, color = "Simulated GPP"), width = 0.2) +
     scale_x_continuous(
       breaks = seq(6, max(daily_stats$time, na.rm = TRUE), by = 2),
-      name = "Hour of day, 2023"
+      name = paste("Hour of day,", Year)
     ) +
     scale_y_continuous(
       name = NULL,
@@ -787,7 +778,7 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     scale_color_manual(values = c( "SIFfull" = "skyblue", "Simulated GPP" = "red")) +
     scale_shape_manual(values = c("SIFfull" = 16, "Simulated GPP" = 16)) +
     labs(
-      x = "Hour of day, 2023",
+      x = paste("Hour of day,", Year),
       color = "Legend",
       shape = "Legend"
     ) +
@@ -964,7 +955,11 @@ TRIPLEX_SIF<- function(Input_variable,Input_parameter)
     width = image_width,
     height = image_height
   )
+  if(overyear==TRUE){
+    yeardata()
+  }
 
-
+  return(result)
 }
+
 
