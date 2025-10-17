@@ -5,11 +5,10 @@ RC_PSII <- read.csv('./data/RC_PSII.csv') # Read the standard database of chloro
 PPFD_Chlf <- function(wavelength, radiance)
 {
   # Define the constant of convert-function
-  h <- 6.62e-34 #
-  c <- 3e8 #
-  Na <- 6.02e23 #
+  h <- 6.62e-34
+  c <- 3e8
+  Na <- 6.02e23
 
-  #
   rad_umol <- (pi * radiance * wavelength * 1e6 ) / (h * c * Na * 1e3 * 1e9)
   # PAR_ppfd <- sum(rad_umol, na.rm = TRUE)
 
