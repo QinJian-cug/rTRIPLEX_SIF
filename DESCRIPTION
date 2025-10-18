@@ -1,6 +1,7 @@
 Package: rTRIPLEXSIF
+Type: Package
 Title: Photosynthesis Model
-Version: 0.5.0
+Version: 0.4.0
 Authors@R:c( 
     person("Jian", "Qin", email = "qjian1998@cug.edu.cn", role = c("aut", "cre"),
     person("Chunbo", "Huang", email = "huangchunbo@cug.edu.cn", role = c("aut"),
@@ -9,9 +10,8 @@ Authors@R:c(
     person("Changhui", "Peng", email = "peng.changhui@uqam.ca", role = c("aut")
     )
 Author: Jian Qin [aut, cre], Chunbo Huang [aut], Shulan Sun [aut], Shaoqiang Wang [aut], Changhui Peng [aut]
-Description: This package can simulate GPP by coupling SIF, using a more precise ecological process. The out of TRIPLEX_SIF function include a table of long format data frame, two scatterplots of simulated GPP at 30-min scale during the entire studied period and in four seasons, two graphs of diurnal dynamics at 30 min scale, and three graph of monthly variations in input environmental variables.
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Description: This photosynthesis model integrates solar-induced chlorophyll fluorescence (SIF) into leaf photosynthesis process to calculate the instantaneous leaf gross photosynthetic rate, and is an integrated model based on the TRIPLEX-CW-Flux model and the mechanistic light reaction (MLR) model.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
